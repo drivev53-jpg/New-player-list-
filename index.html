@@ -3,10 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FOX PLAYER | 90s Hits</title>
+    <title>FOX PLAYER • 90s Drive</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
     <style>
+        /* === styles exactly as provided, no visual changes === */
         :root {
             --glass: rgba(255, 255, 255, 0.05);
             --glass-border: rgba(255, 255, 255, 0.1);
@@ -22,7 +23,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Poppins', sans-serif;
-            -webkit-tap-highlight-color: transparent; /* Remove mobile tap highlight */
+            -webkit-tap-highlight-color: transparent;
         }
         
         body {
@@ -31,10 +32,9 @@
             height: 100vh;
             overflow: hidden;
             display: flex;
-            flex-direction: column; /* Column for player bar at bottom */
+            flex-direction: column;
         }
 
-        /* Dynamic Background with visualizer placeholders */
         #liquid-bg {
             position: fixed;
             inset: 0;
@@ -43,7 +43,6 @@
             transition: 2s ease;
         }
 
-        /* Authorization Screen Overlay */
         #auth-overlay {
             position: fixed;
             inset: 0;
@@ -90,16 +89,13 @@
             box-shadow: 0 15px 50px var(--fox-glow);
         }
 
-        /* Main App Layout */
         #app {
-            display: none; /* Hidden until auth */
+            display: none;
             flex: 1;
-            display: flex;
             height: 100%;
             overflow: hidden;
         }
 
-        /* Sidebar Navigation */
         nav {
             width: 280px;
             background: rgba(0,0,0,0.5);
@@ -161,12 +157,11 @@
             font-size: 1rem;
         }
 
-        /* Main Content Area */
         main {
             flex: 1;
             padding: 3rem;
             overflow-y: auto;
-            padding-bottom: 160px; /* Space for player bar */
+            padding-bottom: 160px;
         }
 
         .section-header {
@@ -225,7 +220,6 @@
             color: var(--text-main);
         }
 
-        /* Hover Play Icon */
         .song-card .play-icon {
             position: absolute;
             top: 50%;
@@ -245,7 +239,6 @@
             opacity: 1;
         }
 
-        /* Player Bar at Bottom */
         .player-bar {
             position: fixed;
             bottom: 30px;
@@ -400,7 +393,6 @@
             box-shadow: 0 0 10px var(--fox-glow);
         }
 
-        /* Scrollbar customization */
         main::-webkit-scrollbar {
             width: 8px;
         }
@@ -418,7 +410,6 @@
             background: rgba(255, 255, 255, 0.2);
         }
 
-        /* Mobile Responsive */
         @media (max-width: 900px) {
             nav {
                 width: 80px;
@@ -512,12 +503,13 @@
             </div>
             
             <div class="playlist-grid" id="playlistGrid">
-                </div>
+                <!-- dynamic cards -->
+            </div>
         </main>
 
         <div class="player-bar">
             <div class="current-info">
-                <img src="https://via.placeholder.com/150/000/ff4d00?text=FOX" id="current-art">
+                <img src="https://via.placeholder.com/150/000/ff4d00?text=FOX" id="current-art" alt="cover">
                 <div class="current-info-text">
                     <h4 id="current-title">Fox Player</h4>
                     <p id="current-artist">Ready to stream</p>
@@ -545,174 +537,222 @@
             </div>
         </div>
 
-    </div><audio id="audio-player"></audio>
+    </div>
 
+    <audio id="audio-player"></audio>
+
+    <!-- Google Identity Services and API scripts -->
     <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()"></script>
     <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 
     <script>
-        /* --- CONFIGURATION --- */
-        // AHMED: Maine aapka Client ID aur Folder ID yahan set kar diya hai.
-        const CLIENT_ID = '1053451371076-2cpluqqln0o9t4n5ibrl6a4sasdm89lt.apps.googleusercontent.com'; //
-        const FOLDER_ID = '1094dBOkA5sMuW7Q-ATnV6GvqPaL6Uq5L'; //
-        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly'; //
+        /* --- CONFIGURATION (your credentials) --- */
+        const CLIENT_ID = '1053451371076-2cpluqqln0o9t4n5ibrl6a4sasdm89lt.apps.googleusercontent.com';
+        const FOLDER_ID = '1094dBOkA5sMuW7Q-ATnV6GvqPaL6Uq5L';
+        const SCOPES = 'https://www.googleapis.com/auth/drive.readonly';
 
         let accessToken = null;
         let tokenClient;
-        let playlist = [];
+        let playlist = [];               // full unfiltered list
         let currentIndex = 0;
         const audio = document.getElementById('audio-player');
         const playBtn = document.getElementById('play-trigger');
 
-        /* --- 1. AUTHENTICATION (GOOGLE) --- */
+        /* --- 1. LOAD GOOGLE API & CLIENT --- */
         function gapiLoaded() {
             gapi.load('client', async () => {
-                await gapi.client.init({ discoveryDocs: ["https://www.googleapis.com/discovery/v1/apis/drive/v3/rest"] }); //
+                try {
+                    await gapi.client.init({
+                        discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                    });
+                    console.log('gapi client ready');
+                } catch (err) {
+                    console.error('gapi.init error', err);
+                }
             });
         }
 
         function gisLoaded() {
             tokenClient = google.accounts.oauth2.initTokenClient({
-                client_id: CLIENT_ID, scope: SCOPES,
+                client_id: CLIENT_ID,
+                scope: SCOPES,
                 callback: (resp) => {
                     if (resp.error) {
-                        alert("Authorization Failed: " + resp.error);
+                        alert('Authorization failed: ' + resp.error);
                         return;
                     }
                     accessToken = resp.access_token;
-                    document.getElementById('auth-overlay').style.display = 'none'; //
-                    document.getElementById('app').style.display = 'flex'; //
-                    fetchDriveFiles(); //
+                    // Set token for gapi client
+                    gapi.client.setToken({ access_token: accessToken });
+                    
+                    // Hide overlay and show app
+                    document.getElementById('auth-overlay').style.display = 'none';
+                    document.getElementById('app').style.display = 'flex';
+                    
+                    // Fetch files from your folder
+                    fetchDriveFiles();
                 },
             });
         }
 
         function handleAuthClick() {
-            // Brave User Tip: If pop-up is blocked, turn Shields OFF for this site.
-            tokenClient.requestAccessToken(); //
+            // If popup is blocked, suggest disabling shields
+            tokenClient.requestAccessToken();
         }
 
-        /* --- 2. DATA FETCHING --- */
+        /* --- 2. FETCH AUDIO FILES FROM YOUR FOLDER --- */
         async function fetchDriveFiles() {
             try {
-                // Fetch only audio files inside the specified folder
                 const response = await gapi.client.drive.files.list({
-                    q: `'${FOLDER_ID}' in parents and mimeType contains 'audio/'`, //
-                    fields: 'files(id, name, thumbnailLink)', //
-                    pageSize: 100 //
+                    q: `'${FOLDER_ID}' in parents and mimeType contains 'audio/'`,
+                    fields: 'files(id, name, thumbnailLink)',
+                    pageSize: 100
                 });
-                playlist = response.result.files; //
-                document.getElementById('track-count').innerText = `${playlist.length} tracks`; //
-                renderPlaylist(playlist); //
+                playlist = response.result.files || [];
+                document.getElementById('track-count').innerText = `${playlist.length} tracks`;
+                renderPlaylist(playlist);
             } catch (err) {
-                console.error("Drive API Error:", err);
-                alert("Error fetching files. Ensure you are added as a 'Test User' and the Folder ID is correct."); //
+                console.error('Drive API error:', err);
+                alert('Error fetching files. Check Folder ID and ensure you are a test user.');
             }
         }
 
-        /* --- 3. UI RENDERING --- */
-        function renderPlaylist(list) {
+        /* --- 3. RENDER GRID (using song ID for reliable playback) --- */
+        function renderPlaylist(songsArray) {
             const grid = document.getElementById('playlistGrid');
-            grid.innerHTML = ''; //
-            
-            if (list.length === 0) {
-                grid.innerHTML = '<p style="grid-column: 1/-1; text-align: center; color: var(--text-dim); margin-top: 50px;">No MP3 tracks found in the folder.</p>'; //
+            if (!songsArray.length) {
+                grid.innerHTML = '<p style="grid-column:1/-1; text-align:center; color:var(--text-dim); margin-top:50px;">📁 No audio files found in this folder.</p>';
                 return;
             }
 
-            grid.innerHTML = list.map((song, index) => `
-                <div class="song-card" onclick="playSong(${index})">
-                    <img src="${song.thumbnailLink ? song.thumbnailLink.replace('=s220', '=s600') : 'https://via.placeholder.com/300/000/ff4d00?text=FOX+Music'}" alt="cover">
+            grid.innerHTML = songsArray.map(song => {
+                const thumb = song.thumbnailLink 
+                    ? song.thumbnailLink.replace('=s220', '=s600') 
+                    : 'https://via.placeholder.com/300/000/ff4d00?text=FOX+Music';
+                const displayName = song.name.replace(/\.(mp3|m4a|wav)$/i, '');
+                // use playSongById with file ID
+                return `<div class="song-card" onclick="playSongById('${song.id}')">
+                    <img src="${thumb}" alt="cover" loading="lazy">
                     <span class="material-symbols-rounded play-icon">play_arrow</span>
-                    <h3>${song.name.replace('.mp3', '')}</h3>
-                </div>`).join(''); //
+                    <h3>${displayName}</h3>
+                </div>`;
+            }).join('');
         }
 
- /* --- 4. PLAYER LOGIC --- */
-        async function playSong(index) {
-            currentIndex = index; //
-            const song = playlist[currentIndex]; //
-            const streamUrl = `https://drive.google.com/drive/folders/1094dBOkA5sMuW7Q-ATnV6GvqPaL6Uq5L`; //
-            
-            // 1. UI Updates
-            document.getElementById('current-title').innerText = song.name.replace('.mp3', ''); //
-            document.getElementById('current-artist').innerText = "90's Evergreen Hits"; //
-            document.getElementById('current-art').src = song.thumbnailLink || 'https://via.placeholder.com/150/000/ff4d00?text=FOX'; //
-            document.getElementById('liquid-bg').style.background = `radial-gradient(circle at 50% 50%, #2a1000 0%, #000000 100%)`; //
+                /* --- 4. PLAYBACK LOGIC (by ID, then index) --- */
+        function playSongById(fileId) {
+            const index = playlist.findIndex(s => s.id === fileId);
+            if (index === -1) return;
+            playSong(index);
+        }
 
-            // 2. Fetch authenticated stream and play
+        async function playSong(index) {
+            currentIndex = index;
+            const song = playlist[currentIndex];
+            
+            // Update UI
+            document.getElementById('current-title').innerText = song.name.replace(/\.(mp3|m4a|wav)$/i, '');
+            document.getElementById('current-artist').innerText = "90's Evergreen Hits";
+            const artUrl = song.thumbnailLink 
+                ? song.thumbnailLink.replace('=s220', '=s600') 
+                : 'https://via.placeholder.com/150/000/ff4d00?text=FOX';
+            document.getElementById('current-art').src = artUrl;
+            document.getElementById('liquid-bg').style.background = `radial-gradient(circle at 50% 50%, #2a1000 0%, #000000 100%)`;
+
+            // Stream file with Bearer token
+            const streamUrl = `https://www.googleapis.com/drive/v3/files/${song.id}?alt=media`;
             try {
                 const response = await fetch(streamUrl, {
-                    headers: { 'Authorization': `Bearer ${accessToken}` } //
+                    headers: { 'Authorization': `Bearer ${accessToken}` }
                 });
-                const blob = await response.blob(); //
-                audio.src = URL.createObjectURL(blob); //
-                audio.play(); //
-                playBtn.innerText = 'pause'; //
+                if (!response.ok) throw new Error('fetch failed');
+                const blob = await response.blob();
+                audio.src = URL.createObjectURL(blob);
+                audio.play();
+                playBtn.innerText = 'pause';
             } catch (err) {
-                console.error("Playback Error:", err);
-                alert("Error playing track. Please try again."); //
+                console.error('Playback error:', err);
+                alert('Could not play this track. Try again.');
             }
         }
 
         function togglePlay() {
-            if (audio.src) {
-                if (audio.paused) {
-                    audio.play(); //
-                    playBtn.innerText = 'pause'; //
-                } else {
-                    audio.pause(); //
-                    playBtn.innerText = 'play_arrow'; //
-                }
+            if (!audio.src) return;
+            if (audio.paused) {
+                audio.play();
+                playBtn.innerText = 'pause';
+            } else {
+                audio.pause();
+                playBtn.innerText = 'play_arrow';
             }
         }
 
         function nextSong() {
-            playSong((currentIndex + 1) % playlist.length); //
+            if (playlist.length) playSong((currentIndex + 1) % playlist.length);
         }
 
         function prevSong() {
-            playSong((currentIndex - 1 + playlist.length) % playlist.length); //
+            if (playlist.length) playSong((currentIndex - 1 + playlist.length) % playlist.length);
         }
 
-        /* --- 5. UTILITIES --- */
-        // Time Update
+        /* --- 5. AUDIO EVENT HANDLERS --- */
         audio.ontimeupdate = () => {
-            const current = audio.currentTime; //
-            const duration = audio.duration; //
-            const pct = (current / duration) * 100; //
-            
-            document.getElementById('progress-fill').style.width = pct + '%'; //
-            document.getElementById('time-current').innerText = formatTime(current); //
-            if(!isNaN(duration)) document.getElementById('time-total').innerText = formatTime(duration); //
+            const current = audio.currentTime;
+            const duration = audio.duration;
+            if (duration && !isNaN(duration)) {
+                const pct = (current / duration) * 100;
+                document.getElementById('progress-fill').style.width = pct + '%';
+                document.getElementById('time-current').innerText = formatTime(current);
+                document.getElementById('time-total').innerText = formatTime(duration);
+            }
         };
 
-        // Auto-play next song
-        audio.onended = () => { nextSong(); }; //
+        audio.onended = () => {
+            nextSong();
+        };
+
+        audio.onpause = () => {
+            playBtn.innerText = 'play_arrow';
+        };
+
+        audio.onplay = () => {
+            playBtn.innerText = 'pause';
+        };
 
         function formatTime(secs) {
-            const min = Math.floor(secs / 60); //
-            const sec = Math.floor(secs % 60); //
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`; //
+            if (isNaN(secs)) return '0:00';
+            const min = Math.floor(secs / 60);
+            const sec = Math.floor(secs % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
         function seek(e) {
-            if (audio.duration) {
-                const rect = document.getElementById('seek-slider').getBoundingClientRect(); //
-                const pos = (e.clientX - rect.left) / rect.width; //
-                audio.currentTime = pos * audio.duration; //
-            }
+            if (!audio.duration || isNaN(audio.duration)) return;
+            const rect = document.getElementById('seek-slider').getBoundingClientRect();
+            const pos = (e.clientX - rect.left) / rect.width;
+            audio.currentTime = pos * audio.duration;
         }
 
         function changeVolume(val) {
-            audio.volume = val; //
+            audio.volume = parseFloat(val);
         }
 
+        /* --- 6. SEARCH FILTER (visual only) --- */
         function filterSongs() {
-            const query = document.getElementById('searchInput').value.toLowerCase(); //
-            const filtered = playlist.filter(s => s.name.toLowerCase().includes(query)); //
-            renderPlaylist(filtered); //
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = playlist.filter(s => s.name.toLowerCase().includes(query));
+            renderPlaylist(filtered);
         }
+
+        // Expose functions globally for onclick attributes
+        window.handleAuthClick = handleAuthClick;
+        window.playSongById = playSongById;
+        window.togglePlay = togglePlay;
+        window.nextSong = nextSong;
+        window.prevSong = prevSong;
+        window.seek = seek;
+        window.changeVolume = changeVolume;
+        window.filterSongs = filterSongs;
     </script>
 </body>
 </html>
